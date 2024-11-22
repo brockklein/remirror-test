@@ -1,110 +1,82 @@
-import './style/card.css';
-
 import {
-    command,
-    CommandFunction,
-    DOMCompatibleAttributes,
-    ExtensionTag,
-    NodeExtension,
-    NodeExtensionSpec,
-    setBlockType,
-} from '@remirror/core';
-import { EditorComponent, NodeViewComponentProps, Remirror, useRemirror } from '@remirror/react';
-import { ComponentType } from 'react';
+	DOMCompatibleAttributes,
+	ExtensionTag,
+	NodeExtension,
+	NodeExtensionSpec,
+} from '@remirror/core'
+import {
+	EditorComponent,
+	NodeViewComponentProps,
+	ReactExtensions,
+	ReactFrameworkOutput,
+	Remirror,
+	useRemirror,
+} from '@remirror/react'
+import { ComponentType, forwardRef, useImperativeHandle } from 'react'
 
-const userAttrs = {
-    id: 'randomId',
-    name: 'John Doe',
-    src: 'https://dummyimage.com/2000x800/479e0c/fafafa',
-};
-const UserCardContent = `<div data-user-id="${userAttrs.id}" data-user-name="${userAttrs.name}" data-user-image-url="${userAttrs.src}"><p>This is editable content...</p></div>`;
+const ReproExtensionInitialContent = `<span data-field-id="initial-id"></span>`
 
-export default { title: 'Components / Card with content' };
+export class ReproExtension extends NodeExtension {
+	get name() {
+		return 'repro-extension' as const
+	}
 
-class UserCardExtension extends NodeExtension {
-    get name() {
-        return 'user-card' as const;
-    }
+	ReactComponent: ComponentType<NodeViewComponentProps> = ({ node }) => {
+		const { id } = node.attrs
 
-    ReactComponent: ComponentType<NodeViewComponentProps> = ({ node, forwardRef }) => {
-        const { name, imageSrc } = node.attrs;
+		return <div className='repro-extension-markup'>{id}</div>
+	}
 
-        return (
-            <div className='card'>
-                <div contentEditable='false'>
-                    <img src={imageSrc} alt='Avatar' style={{ width: '100%' }} />
-                    <h4>
-                        <b>{name}</b>
-                    </h4>
-                    <span>Write user description below</span>
-                </div>
-                <p ref={forwardRef} />
-            </div>
-        );
-    };
+	createTags() {
+		return [ExtensionTag.InlineNode]
+	}
+	createNodeSpec(): NodeExtensionSpec {
+		return {
+			attrs: { id: { default: null } },
+			inline: true,
+			draggable: true,
+			group: 'inline',
+			toDOM: node => {
+				const attrs: DOMCompatibleAttributes = {
+					'data-field-id': node.attrs.id,
+				}
+				return ['span', attrs]
+			},
+			parseDOM: [
+				{
+					attrs: { id: { default: null } },
+					tag: 'span[data-field-id]',
+					getAttrs: dom => {
+						const node = dom as HTMLAnchorElement
+						const id = node.getAttribute('data-field-id')
 
-    createTags() {
-        return [ExtensionTag.Block];
-    }
-    createNodeSpec(): NodeExtensionSpec {
-        return {
-            attrs: {
-                id: { default: null },
-                name: { default: '' },
-                imageSrc: { default: '' },
-            },
-            content: 'block*',
-            toDOM: (node) => {
-                const attrs: DOMCompatibleAttributes = {
-                    'data-user-id': node.attrs.id,
-                    'data-user-name': node.attrs.name,
-                    'data-user-image-url': node.attrs.imageSrc,
-                };
-                return ['div', attrs, 0];
-            },
-            parseDOM: [
-                {
-                    attrs: {
-                        id: { default: null },
-                        name: { default: '' },
-                        imageSrc: { default: '' },
-                    },
-                    tag: 'div[data-user-id]',
-                    getAttrs: (dom) => {
-                        const node = dom as HTMLAnchorElement;
-                        const id = node.getAttribute('data-user-id');
-                        const name = node.getAttribute('data-user-name');
-                        const imageSrc = node.getAttribute('data-user-image-url');
-
-                        return {
-                            id,
-                            name,
-                            imageSrc,
-                        };
-                    },
-                },
-            ],
-        };
-    }
-
-    @command()
-    addCustomCard(): CommandFunction {
-        return setBlockType(this.type)
-    }
+						return { id }
+					},
+				},
+			],
+		}
+	}
 }
 
-const extensions = () => [new UserCardExtension({ disableExtraAttributes: true })];
+const extensions = () => [new ReproExtension({ disableExtraAttributes: true })]
 
-export const UserCardEditor = () => {
-    const { manager, state } = useRemirror({
-        extensions,
-        content: UserCardContent,
-        stringHandler: 'html',
-    });
+export const ReproExtensionEditor = forwardRef<
+	ReactFrameworkOutput<ReactExtensions<ReproExtension>>
+>((_, ref) => {
+	const { manager, state, getContext } = useRemirror({
+		extensions,
+		content: ReproExtensionInitialContent,
+		stringHandler: 'html',
+	})
 
-    return (
-        <Remirror manager={manager} initialContent={state} autoFocus>
-            <EditorComponent />
-        </Remirror>
-    );
-};
+	// From Remirror docs: https://www.remirror.io/docs/advanced/updating-editor-externally
+	useImperativeHandle(ref, () => getContext()!, [getContext])
+
+	return (
+		<div className='editor'>
+			<Remirror manager={manager} initialContent={state} autoFocus>
+				<EditorComponent />
+			</Remirror>
+		</div>
+	)
+})
