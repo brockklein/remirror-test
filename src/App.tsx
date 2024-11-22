@@ -39,14 +39,22 @@ const App = () => {
 	}
 
 	return (
-		<div>
-			<ReproExtensionEditor ref={remirrorRef} />
+		<div style={{ display: 'flex' }}>
+			<div>
+				<ReproExtensionEditor ref={remirrorRef} />
 
-			<div className='id-display'>Current ID: {contentId}</div>
+				<div className='id-display'>Current ID: {contentId}</div>
 
-			<button onClick={onChangeId} className='update-button'>
-				Update to new ID
-			</button>
+				<button onClick={onChangeId} className='update-button'>
+					Update to new ID
+				</button>
+			</div>
+
+			<div style={{ flex: 1, marginLeft: 20 }}>
+				<pre>
+					{JSON.stringify(remirrorRef.current?.getState().toJSON(), null, 2)}
+				</pre>
+			</div>
 		</div>
 	)
 }
