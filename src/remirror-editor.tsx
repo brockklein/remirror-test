@@ -14,9 +14,9 @@ import {
 } from '@remirror/react'
 import { ComponentType, forwardRef, useImperativeHandle } from 'react'
 
-const ReproExtensionInitialContent = `<span data-field-id="initial-id"></span>`
+const ReproExtensionInitialContent = `<p><span data-field-id="initial-id"></span><span data-field-id="initial-id"></span></p><p><span data-field-id="initial-id"></span><span data-field-id="initial-id"></span></p>`
 
-export class ReproExtension extends NodeExtension {
+	export class ReproExtension extends NodeExtension {
 	get name() {
 		return 'repro-extension' as const
 	}
