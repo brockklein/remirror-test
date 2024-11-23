@@ -8,25 +8,24 @@ type FoundNode = {
 type Args = {
 	node: Node
 	fieldId: string
+	pos?: number
 }
 export const findTemplateFieldNode = ({
 	node,
 	fieldId,
+	pos = 0
 }: Args): FoundNode | undefined => {
-	let foundNode: FoundNode | undefined = undefined
 
-	node.descendants((innerNode, pos) => {
-		if (innerNode.attrs.id === fieldId) {
-			foundNode = { node: innerNode, pos }
+	for (let i = 0; i < node.childCount; i++) {
+		const child = node.child(i)
+		if (child.type.name === 'repro-extension' && child.attrs.id === fieldId) {
+			return { node: child, pos }
 		} else {
-			const innerFoundNode = findTemplateFieldNode({
-				node: innerNode,
-				fieldId,
-			})
-			if (innerFoundNode) foundNode = innerFoundNode
+			const foundNode = findTemplateFieldNode({ node: child, fieldId, pos: pos + 1 })
+			if (foundNode) {
+				return foundNode
+			}
 		}
-		if (foundNode) return false
-	})
-
-	return foundNode
+		pos += child.nodeSize
+	}
 }
